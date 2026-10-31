@@ -68,32 +68,35 @@ begin
   -- encrypted_password reste NULL → impossibles à logger (c'est voulu).
   for v_client in select * from jsonb_to_recordset(v_clients) as x(email text, name text, phone text, addr text, meter text)
   loop
-    insert into auth.users (
-      id, instance_id, aud, role, email,
-      encrypted_password, email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at
-    ) values (
-      gen_random_uuid(),
-      '00000000-0000-0000-0000-000000000000',
-      'authenticated',
-      'authenticated',
-      v_client.email,
-      null,
-      now(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      jsonb_build_object('display_name', v_client.name),
-      now() - (random() * interval '180 days'),
-      now()
-    )
-    on conflict (email) do nothing;
+    -- auth.users n'a pas forcément de contrainte UNIQUE sur email seul (varie
+    -- selon les versions Supabase), donc on vérifie manuellement avant insert.
+    if not exists (select 1 from auth.users where lower(email) = lower(v_client.email)) then
+      insert into auth.users (
+        id, instance_id, aud, role, email,
+        encrypted_password, email_confirmed_at,
+        raw_app_meta_data, raw_user_meta_data,
+        created_at, updated_at
+      ) values (
+        gen_random_uuid(),
+        '00000000-0000-0000-0000-000000000000',
+        'authenticated',
+        'authenticated',
+        v_client.email,
+        null,
+        now(),
+        '{"provider":"email","providers":["email"]}'::jsonb,
+        jsonb_build_object('display_name', v_client.name),
+        now() - (random() * interval '180 days'),
+        now()
+      );
+    end if;
 
-    -- Récupère l'id (nouveau ou existant) et met à jour le profile
+    -- Met à jour le profile (créé par le trigger on_auth_user_created_profile).
     update public.profiles p
     set display_name = v_client.name,
         phone = v_client.phone
     from auth.users u
-    where u.email = v_client.email and p.id = u.id;
+    where lower(u.email) = lower(v_client.email) and p.id = u.id;
   end loop;
 
   raise notice '✓ 10 clientes fictives créées / mises à jour';
