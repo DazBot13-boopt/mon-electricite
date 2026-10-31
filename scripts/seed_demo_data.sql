@@ -20,6 +20,12 @@
 --      clientes dans Profil → Ouvrir l'administration.
 -- ============================================================================
 
+-- Les triggers d'audit admin exigent auth.uid() = compte admin, ce qui n'est
+-- jamais vrai dans le SQL Editor (session service_role sans JWT). On les
+-- désactive le temps du seed, puis on les réactive à la fin.
+alter table public.subscriptions disable trigger subscriptions_admin_audit;
+alter table public.invoices       disable trigger invoices_admin_audit;
+
 do $$
 declare
   v_email_admin text := 'EMAIL_CI_DESSOUS';
@@ -234,6 +240,11 @@ begin
 
 end;
 $$;
+
+-- Réactive les triggers d'audit : à partir d'ici, toute mutation sur
+-- subscriptions / invoices repasse par la vérification admin.
+alter table public.subscriptions enable trigger subscriptions_admin_audit;
+alter table public.invoices       enable trigger invoices_admin_audit;
 
 -- Vérif rapide (optionnel) : combien de factures par statut ?
 select status, count(*) as nb from public.invoices group by status order by nb desc;
