@@ -606,14 +606,15 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                     children: [
                   const Icon(Icons.home_work_outlined, color: blue, size: 30),
                   const SizedBox(height: 12),
-                  Text(s['label'] as String,
+                  Text((s['label'] ?? 'Abonnement').toString(),
                       style: Theme.of(context).textTheme.titleLarge),
-                  Text(s['address'] as String),
-                  detailRow('Abonnement', s['id'] as String),
-                  detailRow('Compteur', s['meter'] as String),
+                  Text((s['address'] ?? '').toString()),
+                  detailRow('Référence',
+                      (s['reference'] ?? s['id'] ?? '—').toString()),
+                  detailRow('Compteur', (s['meter_number'] ?? '—').toString()),
                   AppButton('Voir les factures',
                       onPressed: () => setState(() {
-                            selectedSub = s['id'] as String;
+                            selectedSub = (s['id'] ?? '').toString();
                             tab = 1;
                           }))
                 ])))),

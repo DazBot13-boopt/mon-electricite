@@ -192,6 +192,10 @@ class _AdminScreenState extends State<AdminScreen> {
           amountXof: values['amountXof'] as int,
           dueDate: values['dueDate'] as String?,
           externalReference: values['externalReference'] as String?,
+          previousIndex: values['previousIndex'] as double?,
+          currentIndex: values['currentIndex'] as double?,
+          energyXof: values['energyXof'] as int?,
+          feesXof: values['feesXof'] as int?,
         );
       } else {
         final status = values['status'].toString();
@@ -205,6 +209,10 @@ class _AdminScreenState extends State<AdminScreen> {
           dueDate: values['dueDate'] as String?,
           externalReference: values['externalReference'] as String?,
           status: status,
+          previousIndex: values['previousIndex'] as double?,
+          currentIndex: values['currentIndex'] as double?,
+          energyXof: values['energyXof'] as int?,
+          feesXof: values['feesXof'] as int?,
         );
       }
     }, invoice == null ? 'Facture créée.' : 'Facture modifiée.');
@@ -1077,6 +1085,10 @@ class _InvoiceEditorState extends State<_InvoiceEditor> {
   late final TextEditingController _amount;
   late final TextEditingController _dueDate;
   late final TextEditingController _externalReference;
+  late final TextEditingController _previousIndex;
+  late final TextEditingController _currentIndex;
+  late final TextEditingController _energy;
+  late final TextEditingController _fees;
   late String? _subscriptionId;
   late String _status;
 
@@ -1103,6 +1115,14 @@ class _InvoiceEditorState extends State<_InvoiceEditor> {
         TextEditingController(text: invoice?['due_date']?.toString() ?? '');
     _externalReference = TextEditingController(
         text: invoice?['external_reference']?.toString() ?? '');
+    _previousIndex = TextEditingController(
+        text: invoice?['previous_index']?.toString() ?? '');
+    _currentIndex = TextEditingController(
+        text: invoice?['current_index']?.toString() ?? '');
+    _energy = TextEditingController(
+        text: invoice?['energy_xof']?.toString() ?? '');
+    _fees = TextEditingController(
+        text: invoice?['fees_xof']?.toString() ?? '');
     final initialSub = invoice?['subscription_id']?.toString();
     _subscriptionId =
         widget.subscriptions.any((row) => row['id']?.toString() == initialSub)
@@ -1119,6 +1139,10 @@ class _InvoiceEditorState extends State<_InvoiceEditor> {
     _amount.dispose();
     _dueDate.dispose();
     _externalReference.dispose();
+    _previousIndex.dispose();
+    _currentIndex.dispose();
+    _energy.dispose();
+    _fees.dispose();
     super.dispose();
   }
 
@@ -1152,6 +1176,10 @@ class _InvoiceEditorState extends State<_InvoiceEditor> {
           ? null
           : _externalReference.text.trim(),
       'status': _status,
+      'previousIndex': double.tryParse(_previousIndex.text.trim()),
+      'currentIndex': double.tryParse(_currentIndex.text.trim()),
+      'energyXof': int.tryParse(_energy.text.trim()),
+      'feesXof': int.tryParse(_fees.text.trim()),
     });
   }
 
@@ -1230,6 +1258,55 @@ class _InvoiceEditorState extends State<_InvoiceEditor> {
                         : 'Saisissez un montant entier supérieur à zéro.';
                   },
                 ),
+                const SizedBox(height: 13),
+                Row(children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _previousIndex,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          labelText: 'Index précédent (kWh)',
+                          hintText: 'ex. 1200'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _currentIndex,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          labelText: 'Index actuel (kWh)',
+                          hintText: 'ex. 1292'),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 13),
+                Row(children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _energy,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          labelText: 'Énergie (FCFA)',
+                          hintText: 'facultatif'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _fees,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                          labelText: 'Frais (FCFA)', hintText: 'facultatif'),
+                    ),
+                  ),
+                ]),
                 const SizedBox(height: 13),
                 TextFormField(
                   controller: _dueDate,

@@ -182,7 +182,7 @@ class Api {
       final invoices = _rows(await _client
               .from('invoices')
               .select(
-                  'id, subscription_id, period_label, amount_xof, due_date, status, external_reference, created_at')
+                  'id, subscription_id, period_label, amount_xof, due_date, status, external_reference, previous_index, current_index, consumption_kwh, energy_xof, fees_xof, created_at')
               .order('created_at', ascending: false)
               .limit(1000))
           .map((invoice) {
@@ -273,6 +273,10 @@ class Api {
     required int amountXof,
     String? dueDate,
     String? externalReference,
+    double? previousIndex,
+    double? currentIndex,
+    int? energyXof,
+    int? feesXof,
   }) async {
     await _requireAdmin();
     if (subscriptionId.isEmpty || periodLabel.trim().isEmpty || amountXof < 0) {
@@ -282,6 +286,7 @@ class Api {
     if (cleanDueDate != null && DateTime.tryParse(cleanDueDate) == null) {
       throw ApiException(400, 'La date limite doit être au format AAAA-MM-JJ.');
     }
+    final consumption = _computeConsumption(previousIndex, currentIndex);
     await _client.from('invoices').insert(<String, dynamic>{
       'subscription_id': subscriptionId,
       'period_label': periodLabel.trim(),
@@ -289,6 +294,11 @@ class Api {
       'due_date': cleanDueDate,
       'external_reference': _nullable(externalReference),
       'status': 'due',
+      'previous_index': previousIndex,
+      'current_index': currentIndex,
+      'consumption_kwh': consumption,
+      'energy_xof': energyXof,
+      'fees_xof': feesXof,
     });
   }
 
@@ -299,6 +309,10 @@ class Api {
     String? dueDate,
     String? externalReference,
     required String status,
+    double? previousIndex,
+    double? currentIndex,
+    int? energyXof,
+    int? feesXof,
   }) async {
     await _requireAdmin();
     const allowedStatuses = {'due', 'overdue', 'cancelled'};
@@ -315,13 +329,25 @@ class Api {
     if (cleanDueDate != null && DateTime.tryParse(cleanDueDate) == null) {
       throw ApiException(400, 'La date limite doit être au format AAAA-MM-JJ.');
     }
+    final consumption = _computeConsumption(previousIndex, currentIndex);
     await _client.from('invoices').update(<String, dynamic>{
       'period_label': periodLabel.trim(),
       'amount_xof': amountXof,
       'due_date': cleanDueDate,
       'external_reference': _nullable(externalReference),
       'status': status,
+      'previous_index': previousIndex,
+      'current_index': currentIndex,
+      'consumption_kwh': consumption,
+      'energy_xof': energyXof,
+      'fees_xof': feesXof,
     }).eq('id', id);
+  }
+
+  static double? _computeConsumption(double? prev, double? curr) {
+    if (prev == null || curr == null) return null;
+    final diff = curr - prev;
+    return diff < 0 ? null : diff;
   }
 
   Future<void> _requireAdmin() async {
