@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: ./app
+        run: flutter build apk --release
+
+      - name: Rename APK
+        working-directory: ./app
+        run: cp build/app/outputs/flutter-apk/app-release.apk mon-electricite.apk
+
+      - name: Upload APK to run artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mon-electricite-apk
+          path: app/mon-electricite.apk
+
+      - name: Publish rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: Dernière version APK
+          body: |
+            APK de la dernière version `main` de **Mon Électricité**.
+            Généré automatiquement par GitHub Actions à chaque push.
+          files: app/mon-electricite.apk
+          prerelease: false
+          make_latest: true
